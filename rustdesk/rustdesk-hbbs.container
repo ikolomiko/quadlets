@@ -1,0 +1,16 @@
+[Unit]
+Description=RustDesk HBBS (Podman)
+Requires=rustdesk-hbbr.service
+After=rustdesk-hbbr.service
+
+[Service]
+Restart=on-failure
+RestartSec=5
+
+[Container]
+ContainerName=rustdesk-hbbs
+AutoUpdate=registry
+Volume=%D/rustdesk:/root
+Image=docker.io/rustdesk/rustdesk-server:latest
+Exec=hbbs
+Pod=rustdesk.pod
