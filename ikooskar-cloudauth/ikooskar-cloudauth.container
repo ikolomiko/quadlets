@@ -1,0 +1,17 @@
+[Unit]
+Description=Authentication backend for ikoOSKAR (Podman)
+
+[Service]
+Restart=on-failure
+RestartSec=5
+ExecStartPre=/bin/mkdir -p %D/%N
+
+[Install]
+WantedBy=default.target
+
+[Container]
+ContainerName=ikooskar-cloudauth
+AutoUpdate=registry
+Image=ghcr.io/ikolomiko/ikooskar-cloudauth:latest
+PublishPort=5002:5002
+Volume=%D/%N:/app/data
