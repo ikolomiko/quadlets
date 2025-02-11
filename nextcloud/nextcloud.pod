@@ -1,0 +1,11 @@
+[Unit]
+Description=Nextcloud Pod service (Quadlet)
+After=local-fs.target network-online.target
+
+[Install]
+WantedBy=default.target
+
+[Pod]
+PodName=nextcloud
+Network=slirp4netns:port_handler=slirp4netns
+PublishPort=5080:80

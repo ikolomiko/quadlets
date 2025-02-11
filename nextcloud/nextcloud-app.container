@@ -1,0 +1,22 @@
+[Unit]
+Description=Base Nextcloud (apache) container for Nextcloud
+Requires=nextcloud-collabora.service nextcloud-redis.service nextcloud-db.service
+After=nextcloud-collabora.service nextcloud-redis.service nextcloud-db.service
+
+[Service]
+Restart=on-failure
+RestartSec=5
+
+[Container]
+ContainerName=nextcloud-app
+AutoUpdate=registry
+Secret=nc_password,type=env,target=REDIS_HOST_PASSWORD
+Secret=nc_password,type=env,target=MYSQL_PASSWORD
+Environment=REDIS_HOST=127.0.0.1
+Environment=MYSQL_HOST=127.0.0.1
+Environment=MYSQL_DATABASE=nextcloud
+Environment=MYSQL_USER=nextcloud
+Volume=/srv/nextcloud/html:/var/www/html/:z
+Volume=/srv/nextcloud/data:/var/www/html/data:z
+Pod=nextcloud.pod
+Image=docker.io/library/nextcloud:apache

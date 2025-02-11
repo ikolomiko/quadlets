@@ -1,0 +1,18 @@
+[Unit]
+Description=MariaDB database container for Nextcloud
+
+[Service]
+Restart=on-failure
+RestartSec=5
+
+[Container]
+ContainerName=nextcloud-db
+AutoUpdate=registry
+Secret=nc_password,type=env,target=MYSQL_ROOT_PASSWORD
+Secret=nc_password,type=env,target=MYSQL_PASSWORD
+Environment=MYSQL_DATABASE=nextcloud
+Environment=MYSQL_USER=nextcloud
+Volume=/srv/nextcloud/db:/var/lib/mysql/:Z
+Pod=nextcloud.pod
+Image=docker.io/library/mariadb:10
+Exec=--transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW

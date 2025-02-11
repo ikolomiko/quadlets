@@ -1,0 +1,14 @@
+[Unit]
+Description=Redis container for Nextcloud
+
+[Service]
+Restart=on-failure
+RestartSec=5
+
+[Container]
+ContainerName=nextcloud-redis
+AutoUpdate=registry
+Image=docker.io/library/redis:alpine
+Secret=nc_password,type=env,target=REDIS_PASSWORD
+Exec=/bin/sh -c "redis-server --requirepass $$REDIS_PASSWORD"
+Pod=nextcloud.pod
