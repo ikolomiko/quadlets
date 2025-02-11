@@ -1,0 +1,19 @@
+[Unit]
+Description=Vaultwarden, a lightweight Bitwarden server (Podman)
+
+[Service]
+Restart=on-failure
+RestartSec=5
+ExecStartPre=/bin/mkdir -p %D/%N
+
+[Install]
+WantedBy=default.target
+
+[Container]
+ContainerName=vaultwarden
+AutoUpdate=registry
+Image=docker.io/vaultwarden/server:latest
+PublishPort=5004:80
+Volume=%D/%N:/data/
+Secret=vaultwarden_password,type=env,target=ADMIN_TOKEN
+Secret=vaultwarden_domain,type=env,target=DOMAIN
