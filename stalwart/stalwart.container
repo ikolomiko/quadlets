@@ -1,0 +1,22 @@
+[Unit]
+Description=Stalwart Mail Server (Podman)
+
+[Service]
+Restart=on-failure
+RestartSec=5
+ExecStartPre=/bin/mkdir -p %D/%N
+
+[Install]
+WantedBy=default.target
+
+[Container]
+ContainerName=stalwart
+AutoUpdate=registry
+Image=docker.io/stalwartlabs/mail-server:latest
+PublishPort=25:25
+PublishPort=587:587
+PublishPort=465:465
+PublishPort=143:143
+PublishPort=993:993
+PublishPort=5010:8080
+Volume=%D/%N:/opt/stalwart-mail
