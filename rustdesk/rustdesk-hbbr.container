@@ -2,6 +2,7 @@
 Description=RustDesk HBBR (Podman)
 
 [Service]
+ExecStartPre=/bin/mkdir -p %D/rustdesk
 Restart=on-failure
 RestartSec=5
 
@@ -11,4 +12,4 @@ AutoUpdate=registry
 Volume=%D/rustdesk:/root
 Image=docker.io/rustdesk/rustdesk-server:latest
 Exec=hbbr
-Pod=rustdesk.pod
+PublishPort=21117:21117

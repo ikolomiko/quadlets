@@ -4,8 +4,12 @@ Requires=rustdesk-hbbr.service
 After=rustdesk-hbbr.service
 
 [Service]
+ExecStartPre=/bin/mkdir -p %D/rustdesk
 Restart=on-failure
 RestartSec=5
+
+[Install]
+WantedBy=default.target
 
 [Container]
 ContainerName=rustdesk-hbbs
@@ -13,4 +17,6 @@ AutoUpdate=registry
 Volume=%D/rustdesk:/root
 Image=docker.io/rustdesk/rustdesk-server:latest
 Exec=hbbs
-Pod=rustdesk.pod
+PublishPort=21115:21115
+PublishPort=21116:21116
+PublishPort=21116:21116/udp
