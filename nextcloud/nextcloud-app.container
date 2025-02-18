@@ -10,7 +10,6 @@ RestartSec=5
 [Container]
 ContainerName=nextcloud-app
 AutoUpdate=registry
-Secret=nc_password,type=env,target=REDIS_HOST_PASSWORD
 Secret=nc_password,type=env,target=MYSQL_PASSWORD
 Environment=REDIS_HOST=127.0.0.1
 Environment=MYSQL_HOST=127.0.0.1
