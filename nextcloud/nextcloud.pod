@@ -9,3 +9,4 @@ WantedBy=default.target
 PodName=nextcloud
 Network=slirp4netns:port_handler=slirp4netns
 PublishPort=5080:80
+PublishPort=5009:9980

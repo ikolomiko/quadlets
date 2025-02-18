@@ -10,4 +10,4 @@ ContainerName=nextcloud-collabora
 AutoUpdate=registry
 Environment="aliasgroup1=https://cloud\\.ikolomiko\\.com:443"
 Image=docker.io/collabora/code:latest
-PublishPort=5009:9980
+Pod=nextcloud.pod
