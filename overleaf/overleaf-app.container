@@ -1,0 +1,22 @@
+[Unit]
+Description=Overleaf App (Podman)
+Requires=overleaf-redis.service overleaf-db.service
+After=overleaf-redis.service overleaf-db.service
+
+[Service]
+ExecStartPre=/bin/mkdir -p %D/overleaf/sharelatex_data
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+
+[Container]
+Pod=overleaf.pod
+ContainerName=overleaf-app
+AutoUpdate=registry
+EnvironmentFile=overleaf-config.txt
+Image=ghcr.io/ikolomiko/sharelatex
+StopTimeout=60
+Volume=%D/overleaf/sharelatex_data:/var/lib/overleaf
+Environment=SANDBOXED_COMPILES_HOST_DIR=%D/overleaf/sharelatex_data/data/compiles

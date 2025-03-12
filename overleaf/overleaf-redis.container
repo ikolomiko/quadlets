@@ -1,0 +1,14 @@
+[Unit]
+Description=Redis container for Overleaf
+
+[Service]
+Restart=always
+RestartSec=5
+ExecStartPre=/bin/mkdir -p %D/overleaf/redis_data
+
+[Container]
+Pod=overleaf.pod
+AutoUpdate=registry
+ContainerName=overleaf-redis
+Image=docker.io/redis:6.2
+Volume=%D/overleaf/redis_data:/data

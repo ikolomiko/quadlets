@@ -1,0 +1,22 @@
+[Unit]
+Description=MongoDB container for Overleaf
+
+[Service]
+Restart=always
+RestartSec=5
+ExecStartPre=/bin/mkdir -p %D/overleaf/mongo_data
+
+[Container]
+Pod=overleaf.pod
+ContainerName=overleaf-db
+AutoUpdate=registry
+Notify=healthy
+HealthCmd=echo 'db.stats().ok' | mongosh localhost:27017/test --quiet
+HealthInterval=10s
+HealthTimeout=10s
+HealthRetries=5
+Environment=MONGO_INITDB_DATABASE=sharelatex
+Exec=--replSet overleaf
+Image=docker.io/mongo:6.0
+Volume=%D/overleaf/mongo_data:/data/db
+Volume=./mongodb-init-replica-set.js:/docker-entrypoint-initdb.d/mongodb-init-replica-set.js

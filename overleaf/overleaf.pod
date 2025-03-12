@@ -1,0 +1,13 @@
+[Unit]
+Description=Overleaf Pod service (Quadlet)
+After=local-fs.target network-online.target
+
+[Install]
+WantedBy=default.target
+
+[Pod]
+PodName=overleaf
+Network=slirp4netns
+PublishPort=5011:80
+AddHost=mongo:127.0.0.1
+AddHost=redis:127.0.0.1
