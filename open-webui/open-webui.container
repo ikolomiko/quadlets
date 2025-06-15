@@ -16,5 +16,6 @@ PublishPort=1338:8080
 Volume=open-webui:/app/backend/data
 Environment='ANONYMIZED_TELEMETRY=False'
 Environment='OLLAMA_BASE_URL=http://ollama.local:11434'
+Environment='WEBUI_NAME=ikoGPT'
 AddHost=ollama.local:10.66.66.3
 Network=slirp4netns:allow_host_loopback=true
