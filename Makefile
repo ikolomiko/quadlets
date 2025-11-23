@@ -1,66 +1,54 @@
-.PHONY: help install-rootless install-rootful
 
-# Default action: print available targets
+PREFIX ?= /usr/local
+DESTDIR ?=
+BINDIR := $(DESTDIR)$(PREFIX)/bin
+SHAREDIR := $(DESTDIR)$(PREFIX)/share/quadlets
+BASH_COMPLETION_DIR := $(DESTDIR)$(PREFIX)/share/bash-completion/completions
+ZSH_COMPLETION_DIR := $(DESTDIR)$(PREFIX)/share/zsh/site-functions
+
+.PHONY: help install remove
 .DEFAULT_GOAL := help
-
-# Define default values
-XDG_CONFIG_HOME ?= $(HOME)/.config
 
 help:
 	@echo "Available targets:"
-	@echo "  install-rootless      Create symlinks for rootless quadlet installation"
-	@echo "  uninstall-rootless    Remove symlinks for rootless quadlet installation"
-	@echo "  install-rootful       Create symlinks for rootful quadlet installation "
-	@echo "  uninstall-rootful     Remove symlinks for rootful quadlet installation "
+	@echo "  install    Install qm and quadlet files to $(PREFIX) (use PREFIX=... or DESTDIR=... for staging)"
+	@echo "  remove     Remove installed files from $(PREFIX)" 
+	@echo "Variables:"
+	@echo "  PREFIX     Installation prefix (default: /usr/local)"
+	@echo "  DESTDIR    Staging directory prepended to PREFIX for packaging"
+	@echo "Examples:"
+	@echo "  make install               # install to /usr/local"
+	@echo "  make PREFIX=/opt install   # install to /opt"
+	@echo "  make DESTDIR=/tmp/stage install  # install into staging dir"
 
-install-rootless:
-	@\
-	echo "Installing rootless quadlets for all directories..."; \
-	mkdir -p "$(XDG_CONFIG_HOME)/containers/systemd/"; \
-	for d in */; do \
-		d="$${d%/}"; \
+
+FOLDERS := \
+	headscale \
+	ikooskar-cloudauth \
+	nextcloud \
+	open-webui \
+	overleaf \
+	rustdesk \
+	stalwart \
+	vaultwarden
+
+install:
+	@echo "Installing qm to $(BINDIR) and other files to $(SHAREDIR)"
+	@install -d "$(BINDIR)" "$(SHAREDIR)" "$(BASH_COMPLETION_DIR)" "$(ZSH_COMPLETION_DIR)"
+	@install -m 755 qm "$(SHAREDIR)/qm"
+	@ln -sfn "$(SHAREDIR)/qm" "$(BINDIR)/qm"
+	@install -m 644 contrib/completions/qm.bash "$(BASH_COMPLETION_DIR)/qm"
+	@install -m 644 contrib/completions/_qm "$(ZSH_COMPLETION_DIR)/_qm"
+	for d in $(FOLDERS); do \
 		if [ -d "$$d" ]; then \
-			echo "Creating symlink for $$d..."; \
-			ln -sf "$(PWD)/$$d" "$(XDG_CONFIG_HOME)/containers/systemd/"; \
-		fi \
-	done; \
-	systemctl --user daemon-reload;
+			find "$$d" -type f -print0 | xargs -0 -n1 sh -c 'for f; do dest=$${f#./}; install -D -m 644 "$$f" "$(SHAREDIR)/$$dest"; done' _; \
+		fi; \
+	done
 
-
-uninstall-rootless:
-	@\
-	echo "Uninstalling rootless quadlets for all directories..."; \
-	for d in */; do \
-		d="$${d%/}"; \
-		if [ -d "$$d" ]; then \
-			echo "Removing symlink for $$d..."; \
-			rm -f "$(XDG_CONFIG_HOME)/containers/systemd/$$d"; \
-		fi \
-	done; \
-	systemctl --user daemon-reload;
-
-install-rootful:
-	@\
-	echo "Installing rootful quadlets for all directories..."; \
-	sudo mkdir -p /etc/containers/systemd/; \
-	for d in */; do \
-		d="$${d%/}"; \
-		if [ -d "$$d" ]; then \
-			echo "Creating symlink for $$d..."; \
-			sudo ln -sf "$(PWD)/$$d" /etc/containers/systemd/; \
-		fi \
-	done; \
-	sudo systemctl daemon-reload;
-
-uninstall-rootful:
-	@\
-	echo "Uninstalling rootful quadlets for all directories..."; \
-	for d in */; do \
-		d="$${d%/}"; \
-		if [ -d "$$d" ]; then \
-			echo "Removing symlink for $$d..."; \
-			sudo rm -f "/etc/containers/systemd/$$d"; \
-		fi \
-	done; \
-	sudo systemctl daemon-reload;
+remove:
+	@echo "Removing qm from $(BINDIR) and $(SHAREDIR)"
+	@rm -f "$(BINDIR)/qm"
+	@rm -rf "$(SHAREDIR)"
+	@rm -f "$(BASH_COMPLETION_DIR)/qm"
+	@rm -f "$(ZSH_COMPLETION_DIR)/_qm"
 

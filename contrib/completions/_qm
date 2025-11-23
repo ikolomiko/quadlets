@@ -1,0 +1,62 @@
+#compdef qm
+# Zsh completion for `qm`
+# Place this file on your $fpath (e.g. ~/.zsh/completions) and run `autoload -Uz compinit; compinit`.
+
+_qm() {
+  typeset -A opt_args
+  local context state
+
+  _arguments \
+    '1:subcommand:->subcmd' \
+    '*::args:->args'
+
+  if [[ $state == subcmd ]]; then
+    local -a _qm_subcmds
+    _qm_subcmds=( \
+      'install:Install quadlet(s)' \
+      'remove:Remove quadlet symlink(s)' \
+      'list:List installed quadlet(s)' \
+      'status:Show systemctl status for quadlet(s)' \
+    )
+    _describe 'subcommand' _qm_subcmds && return
+  fi
+
+  if [[ $state == args ]]; then
+    local cmd
+    cmd=$words[1]
+    case $cmd in
+      install|remove|status)
+        _arguments \
+          '(-r --rootful)'{-r,--rootful}'[use rootful / system-wide mode]' \
+          '(-h --help)'{-h,--help}'[show help]' \
+          '*:quadlet:->quadlet'
+
+        if [[ $state == quadlet ]]; then
+          local -a names_list
+          local qm_path dir d
+          qm_path=$(command -v qm 2>/dev/null || true)
+          if [[ -n $qm_path ]]; then
+            dir=$(dirname "$(readlink -f -- "$qm_path")")
+            if [[ -d $dir ]]; then
+              for d in "$dir"/*(/); do
+                names_list+=(${d:t})
+              done
+            fi
+          fi
+          if (( ${#names_list} )); then
+            _describe 'quadlet' names_list
+          else
+            _files
+          fi
+        fi
+        ;;
+      list)
+        _arguments '(-h --help)'{-h,--help}'[show help]'
+        ;;
+    esac
+  fi
+}
+
+compdef _qm qm
+
+# vim: ft=zsh

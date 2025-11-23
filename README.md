@@ -6,10 +6,7 @@ Some Quadlet files for the services I self-host. Feel free to use and contribute
 - [But What is Podman?](#but-what-is-podman)
 - [Dependencies](#dependencies)
 - [Installation](#installation)
-  - [Rootful vs Rootless Installations](#rootful-vs-rootless-installations)
-  - [Rootless Installation](#rootless-installation)
-  - [Rootful Installation](#rootful-installation)
-  - [Uninstallation](#uninstallation)
+- [Usage](#usage)
 - [Secrets](#secrets)
 - [Further Reading](#further-reading)
 - [License](#license)
@@ -34,50 +31,75 @@ To use these Quadlet files, you'll need the following:
 
 ## Installation
 
-You can install these Quadlet files in either **rootful** or **rootless** mode. Here's how:
+Installation
 
-### Rootful vs Rootless Installations
+Install the `qm` manager and copy quadlet files to the system prefix using the provided `Makefile`.
 
-- **Rootful** installations run containers with root privileges, meaning they have full access to system resources.
-- **Rootless** installations run containers without root privileges, enhancing security by isolating containers from the system and reducing the risk of privilege escalation.
-
-For most users, **rootless** installations are recommended as they are safer. However, **rootful** installations may be necessary in certain cases where more system-level access is required.
-
-### Rootless Installation
-Before running the rootless installation, you'll need to enable lingering for your user account. This ensures that systemd continues to run services for your user after you log out. Run the following command **only once**:
+Install to the default prefix (`/usr/local`) (may require `sudo`):
 
 ```bash
-sudo loginctl enable-linger $USER
+sudo make install
 ```
 
-To install the Quadlet files in **rootless** mode (without requiring root privileges), use the following command:
+Install to a different prefix (no sudo):
 
 ```bash
-make install-rootless
+make PREFIX=/opt install
 ```
 
-### Rootful Installation
-To install the Quadlet files in **rootful** mode (using root privileges), use the following command:
+Uninstall the installed files:
 
 ```bash
-make install-rootful
+sudo make remove
 ```
 
-## Uninstallation
+The `Makefile` also installs shell completions for Bash and Zsh into the corresponding prefix locations.
 
-To remove the Quadlet files, use the following commands:
+## Usage
 
-- For **rootless** uninstallation:
-  
-  ```bash
-  make uninstall-rootless
-  ```
+Use the installed `qm` command to manage quadlets (enable/disable/list/query). `qm` supports rootless and rootful modes via the `-r|--rootful` flag.
 
-- For **rootful** uninstallation:
+Enable a quadlet (rootless):
 
-  ```bash
-  make uninstall-rootful
-  ```
+```bash
+qm install <quadlet-name>
+```
+
+Enable a quadlet system-wide (rootful):
+
+```bash
+qm install -r <quadlet-name>
+```
+
+Disable a quadlet (rootless):
+
+```bash
+qm remove <quadlet-name>
+```
+
+Disable a quadlet system-wide (rootful):
+
+```bash
+qm remove -r <quadlet-name>
+```
+
+List installed quadlets (shows both rootless and rootful installs):
+
+```bash
+qm list
+```
+
+Show systemd status for a quadlet unit (rootless):
+
+```bash
+qm status <unit-or-quadlet-name>
+```
+
+Show systemd status for a quadlet unit system-wide (rootful):
+
+```bash
+qm status -r <unit-or-quadlet-name>
+```
 
 ## Secrets
 I use Podman secrets to manage sensitive information within these Quadlet files. For the **Vaultwarden** and **Nextcloud** services, you need to create some secrets:

@@ -1,0 +1,463 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Minimal CLI script for managing systemd container unit installs
+# Subcommands: install, remove, list
+# install/remove accept --rootful (boolean) to target /etc/containers/systemd
+# otherwise target is $XDG_CONFIG_HOME/containers/systemd (rootless by default)
+
+
+: "${XDG_CONFIG_HOME:=${HOME:-$PWD}/.config}"
+
+# Directory where this script lives (quadlets root)
+quadlets_dir="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+# Script base name (avoid printing full path)
+script_name="$(basename "${BASH_SOURCE[0]}")"
+
+usage() {
+	cat <<-USAGE
+qm: Shell script for managing quadlets
+
+Usage: ${script_name} <command> [args...]
+
+Commands:
+    install    Install quadlet(s).
+    remove     Remove quadlet symlink(s).
+    list       List installed quadlet(s).
+    status     Show systemctl status for quadlet(s).
+
+Flags:
+    -r, --rootful    Install/remove quadlets in rootful mode instead of rootless (requires sudo)
+    -h, --help       Show this help
+
+Run '${script_name} <command> --help' for subcommand-specific help.
+USAGE
+	exit 2
+}
+
+usage_install() {
+	cat <<-USAGE
+Usage: ${script_name} install [options] <names...>
+
+Install quadlet(s) by creating symlinks in the target directory.
+
+Options:
+  -r, --rootful    Install into /etc/containers/systemd/qm (requires sudo)
+  -h, --help       Show this help
+
+Names:
+  One or more quadlet directory names located next to this script.
+USAGE
+	exit 0
+}
+
+usage_remove() {
+	cat <<-USAGE
+Usage: ${script_name} remove [options] <names...>
+
+Remove quadlet symlink(s) from the target directory.
+
+Options:
+  -r, --rootful    Remove from /etc/containers/systemd/qm (requires sudo)
+  -h, --help       Show this help
+
+Names:
+  One or more quadlet names to remove (symlinks must point to local quadlets).
+USAGE
+	exit 0
+}
+
+usage_list() {
+	cat <<-USAGE
+Usage: ${script_name} list [-h|--help]
+
+List installed quadlets for both rootless and rootful targets.
+
+Options:
+  -h, --help    Show this help
+USAGE
+	exit 0
+}
+
+usage_status() {
+		cat <<-USAGE
+Usage: ${script_name} status [options] <name...>
+
+Show `systemctl status` for one or more quadlet-related units.
+
+Options:
+	-r, --rootful    Query system-wide systemd (uses sudo)
+	-h, --help       Show this help
+
+Names:
+	One or more quadlet unit names to query with systemctl.
+USAGE
+		exit 0
+}
+
+
+cmd_install() {
+	local target_dir="$1"
+ 	local rootful="${2:-false}"
+ 	shift 2 || true
+ 	local names=("$@")
+ 	local sudo_cmd=""
+ 	if [[ "$rootful" == "true" ]]; then
+ 		sudo_cmd="sudo"
+ 	fi
+
+ 	if [[ ${#names[@]} -eq 0 ]]; then
+ 		echo "No quadlet names provided for install" >&2
+ 		return 2
+ 	fi
+
+ 	# Ensure target_dir exists (use sudo when needed)
+ 	if [[ "$rootful" == "true" ]]; then
+ 		$sudo_cmd mkdir -p "$target_dir"
+ 	else
+ 		mkdir -p "$target_dir"
+ 	fi
+
+ 	for name in "${names[@]}"; do
+ 		# Validate quadlet exists as a directory next to this script
+ 		src_path="$quadlets_dir/$name"
+ 		if [[ ! -d "$src_path" ]]; then
+ 			echo "Skipping '$name': not a directory next to the script ($src_path)" >&2
+ 			continue
+ 		fi
+
+ 		dest_path="$target_dir/$name"
+
+ 		# If destination exists
+ 		if [[ -e "$dest_path" && ! -L "$dest_path" ]]; then
+ 			echo "Skipping '$name': destination exists and is not a symlink: $dest_path" >&2
+ 			continue
+ 		fi
+
+ 		# Create/replace symlink pointing to the quadlet directory (absolute path)
+ 		if [[ "$rootful" == "true" ]]; then
+				$sudo_cmd ln -sfn "$src_path" "$dest_path"
+ 		else
+ 			ln -sfn "$src_path" "$dest_path"
+ 		fi
+ 		echo "Installed: $name -> $dest_path"
+ 	done
+
+	# reload systemd units
+	if [[ "$rootful" == "true" ]]; then
+		# ensure we run with sudo for system-wide daemon-reload
+		$sudo_cmd systemctl daemon-reload
+	else
+		systemctl --user daemon-reload
+	fi
+
+	# Start new quadlets
+	for name in "${names[@]}"; do
+		unit="${name}.service"
+		if [[ "$rootful" == "true" ]]; then
+			if $sudo_cmd systemctl start "$unit"; then
+				echo "Started: $unit"
+			else
+				echo "Failed to start: $unit" >&2
+			fi
+		else
+			if systemctl --user start "$unit"; then
+				echo "Started: $unit"
+			else
+				echo "Failed to start: $unit" >&2
+			fi
+		fi
+	done
+
+	return 0
+}
+
+cmd_remove() {
+ 	local target_dir="$1"
+ 	local rootful="${2:-false}"
+ 	shift 2 || true
+ 	local names=("$@")
+ 	local sudo_cmd=""
+ 	if [[ "$rootful" == "true" ]]; then
+ 		sudo_cmd="sudo"
+ 	fi
+
+ 	if [[ ${#names[@]} -eq 0 ]]; then
+ 		echo "No quadlet names provided for remove" >&2
+ 		return 2
+ 	fi
+
+	# Stop quadlets before removing
+	for name in "${names[@]}"; do
+		unit="${name}.service"
+		if [[ "$rootful" == "true" ]]; then
+			if $sudo_cmd systemctl stop "$unit"; then
+				echo "Stopped: $unit"
+			else
+				echo "Failed to stop: $unit" >&2
+			fi
+		else
+			if systemctl --user stop "$unit"; then
+				echo "Stopped: $unit"
+			else
+				echo "Failed to stop: $unit" >&2
+			fi
+		fi
+	done
+
+ 	for name in "${names[@]}"; do
+ 		dest_path="$target_dir/$name"
+
+ 		if [[ ! -L "$dest_path" ]]; then
+ 			echo "Skipping '$name': not a symlink at $dest_path" >&2
+ 			continue
+ 		fi
+
+ 		# Resolve where the symlink points to and ensure it's inside quadlets_dir
+ 		resolved="$(readlink -f "$dest_path")"
+ 		case "$resolved" in
+ 			"$quadlets_dir"* )
+ 				# Safe to remove
+ 				if [[ "$rootful" == "true" ]]; then
+ 					$sudo_cmd rm -f "$dest_path"
+ 				else
+ 					rm -f "$dest_path"
+ 				fi
+ 				echo "Removed symlink: $dest_path"
+ 				;;
+ 			*)
+ 				echo "Skipping '$name': symlink does not point to a quadlet in $quadlets_dir (points to $resolved)" >&2
+ 				;;
+ 		esac
+ 	done
+
+	# reload systemd units
+	if [[ "$rootful" == "true" ]]; then
+		$sudo_cmd systemctl daemon-reload
+	else
+		systemctl --user daemon-reload
+	fi
+
+	return 0
+}
+
+cmd_status() {
+	local rootful="${1:-false}"
+	shift || true
+	local names=("$@")
+	local sudo_cmd=""
+	if [[ "$rootful" == "true" ]]; then
+		sudo_cmd="sudo"
+	fi
+
+	if [[ ${#names[@]} -eq 0 ]]; then
+		echo "No quadlet name provided for status" >&2
+		return 2
+	fi
+
+	for name in "${names[@]}"; do
+		if [[ "$rootful" == "true" ]]; then
+			$sudo_cmd SYSTEMD_COLORS=1 systemctl status "$name" || true
+		else
+			SYSTEMD_COLORS=1 systemctl --user status "$name" || true
+		fi
+	done
+
+	return 0
+}
+
+cmd_list() {
+	# color codes
+	local RED="\033[31m"
+	local WHITE="\033[37m"
+	local RESET="\033[0m"
+	local BOLD="\033[1m"
+
+	# Collect entries first so we can compute the longest name
+	declare -a MODES MODE_RAW NAMES PORTS
+	local maxlen=0
+
+	collect_mode() {
+		local mode="$1"; shift
+		local dir="$1"; shift
+		local label=""
+		if [[ "$mode" == "root" ]]; then
+			label="${RED}root${RESET}"
+		else
+			label="${WHITE}user${RESET}"
+		fi
+
+		if [[ ! -d "$dir" ]]; then
+			return
+		fi
+
+		shopt -s nullglob
+		for entry in "$dir"/*; do
+			resolved="$(readlink -f "$entry")"
+			if [[ -d "$resolved" ]]; then
+				shopt -s nullglob
+				children=("$resolved"/*)
+				if [[ ${#children[@]} -gt 0 ]]; then
+					name="$(basename "$entry")"
+					# extract PublishPort values (searching under the install dir passed)
+					ports_raw=$(grep -rhoP 'PublishPort=\K(.*)$' "$dir/$name" 2>/dev/null | paste -sd "," -)
+					if [[ -z "$ports_raw" ]]; then
+						ports_raw="-"
+					fi
+					MODES+=("$label")
+					MODE_RAW+=("$mode")
+					NAMES+=("$name")
+					PORTS+=("$ports_raw")
+					# update max length
+					if (( ${#name} > maxlen )); then
+						maxlen=${#name}
+					fi
+				fi
+			fi
+		done
+		shopt -u nullglob
+	}
+
+	# Always collect both user and root targets
+	user_dir="$XDG_CONFIG_HOME/containers/systemd/qm"
+	root_dir="/etc/containers/systemd/qm"
+	collect_mode "user" "$user_dir"
+	collect_mode "root" "$root_dir"
+
+	# Print header AFTER collection; adjust spacing based on longest name
+	padded_header_name=$(printf "%-*s" "$maxlen" "NAME")
+	printf "%b  %b\t%b\t%b\n" " " "${BOLD}MODE${RESET}" "${BOLD}${padded_header_name}${RESET}" "${BOLD}PORTS${RESET}"
+	printf "%s\n" "------------------------------------------------------------"
+
+	# Print collected entries (pad names separately so we can wrap them in color escapes)
+	local i padded_name first_char rootful_flag
+	for i in "${!NAMES[@]}"; do
+		padded_name=$(printf "%-*s" "$maxlen" "${NAMES[i]}")
+		# determine whether to query systemctl rootful or user
+		if [[ "${MODE_RAW[i]}" == "root" ]]; then
+			rootful_flag=true
+		else
+			rootful_flag=false
+		fi
+		# run cmd_status for this entry but capture only the first char of the first line
+		first_char=$(cmd_status "$rootful_flag" "${NAMES[i]}" 2>/dev/null | head -1 | cut -d" " -f1 || true)
+		if [[ -z "$first_char" ]]; then
+			first_char='-'
+		fi
+		printf "%s  %b\t%b\t%s\n" "$first_char" "${MODES[i]}" "${BOLD}${padded_name}${RESET}" "${PORTS[i]}"
+	done
+
+	return 0
+}
+
+# Require at least one argument
+if [[ ${#@} -lt 1 ]]; then
+	usage
+fi
+
+subcmd="$1"; shift
+
+case "${subcmd}" in
+	install)
+		# parse options and names; flags may appear anywhere after subcommand
+		rootful=false
+		names=()
+		while [[ $# -gt 0 ]]; do
+			case "$1" in
+				-r|--rootful)
+					rootful=true; shift ;;
+				-h|--help)
+					usage_install ;;
+				--)
+					shift; break ;;
+				-* )
+					echo "Unknown option for install: $1" >&2; usage_install ;;
+				*)
+					names+=("$1"); shift ;;
+			esac
+		done
+
+		if [[ "$rootful" == true ]]; then
+			target_dir="/etc/containers/systemd/qm"
+		else
+			target_dir="$XDG_CONFIG_HOME/containers/systemd/qm"
+		fi
+
+		cmd_install "$target_dir" "$rootful" "${names[@]}"
+		;;
+
+	remove)
+		# parse options and names; flags may appear anywhere after subcommand
+		rootful=false
+		names=()
+		while [[ $# -gt 0 ]]; do
+			case "$1" in
+				-r|--rootful)
+					rootful=true; shift ;;
+				-h|--help)
+					usage_remove ;;
+				--)
+					shift; break ;;
+				-* )
+					echo "Unknown option for remove: $1" >&2; usage_remove ;;
+				*)
+					names+=("$1"); shift ;;
+			esac
+		done
+
+		if [[ "$rootful" == true ]]; then
+			target_dir="/etc/containers/systemd/qm"
+		else
+			target_dir="$XDG_CONFIG_HOME/containers/systemd/qm"
+		fi
+
+		cmd_remove "$target_dir" "$rootful" "${names[@]}"
+		;;
+
+	list)
+		# list only accepts -h/--help; it always lists both user and root targets
+		while [[ $# -gt 0 ]]; do
+			case "$1" in
+				-h|--help)
+					usage_list ;;
+				*)
+					echo "Unknown flag for list: $1" >&2
+					usage_list ;;
+			esac
+		done
+
+		cmd_list
+		;;
+
+	status)
+		# parse options and names; flags may appear anywhere after subcommand
+		rootful=false
+		names=()
+		while [[ $# -gt 0 ]]; do
+			case "$1" in
+				-r|--rootful)
+					rootful=true; shift ;;
+				-h|--help)
+					usage_status ;;
+				--)
+					shift; break ;;
+				-* )
+					echo "Unknown option for status: $1" >&2; usage_status ;;
+				*)
+					names+=("$1"); shift ;;
+			esac
+		done
+
+		cmd_status "$rootful" "${names[@]}"
+		;;
+
+	-h|--help)
+		usage
+		;;
+
+	*)
+		echo "Unknown subcommand: ${subcmd}" >&2
+		usage
+		;;
+esac
+
