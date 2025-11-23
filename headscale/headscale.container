@@ -1,0 +1,22 @@
+[Unit]
+Description=Headscale VPN Container
+
+[Service]
+Restart=always
+RestartSec=5
+ExecStartPre=/bin/mkdir -p %D/headscale/data
+ExecStartPre=/bin/mkdir -p %D/headscale/config
+ExecStartPre=/bin/mkdir -p %D/headscale/run
+
+[Container]
+ContainerName=headscale
+Exec=serve
+PublishPort=0.0.0.0:6001:6001
+PublishPort=0.0.0.0:6002:6002
+PublishPort=0.0.0.0:6003:6003
+Image=docker.io/headscale/headscale:stable
+Volume=%D/headscale/data:/var/lib/headscale
+Volume=%D/headscale/config:/etc/headscale
+Volume=./config.yaml:/etc/headscale/config.yaml
+Volume=%D/headscale/run:/var/run/headscale
+Network=slirp4netns:port_handler=slirp4netns
