@@ -1,0 +1,17 @@
+[Unit]
+Description=Headplane Podman Container
+Requires=headscale.service
+After=headscale.service
+
+[Service]
+Restart=always
+RestartSec=5
+ExecStartPre=/bin/mkdir -p %D/headplane/data
+
+[Container]
+ContainerName=headplane
+PublishPort=0.0.0.0:6010:6010
+Image=ghcr.io/tale/headplane:latest
+Volume=%D/headplane/data:/var/lib/headplane
+Volume=../headscale/config.yaml:/etc/headscale/config.yaml
+Volume=./config.yaml:/etc/headplane/config.yaml

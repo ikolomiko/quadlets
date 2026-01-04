@@ -24,6 +24,7 @@ help:
 
 FOLDERS := \
 	headscale \
+	headplane \
 	ikooskar-cloudauth \
 	nextcloud \
 	open-webui \
