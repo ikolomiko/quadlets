@@ -19,5 +19,6 @@ Image=docker.io/headscale/headscale:stable
 Volume=%D/headscale/data:/var/lib/headscale
 Volume=%D/headscale/config:/etc/headscale
 Volume=./config.yaml:/etc/headscale/config.yaml
+Volume=./dns-records.json:/etc/headscale/dns-records.json
 Volume=%D/headscale/run:/var/run/headscale
 Network=slirp4netns:port_handler=slirp4netns

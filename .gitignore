@@ -1,3 +1,4 @@
 overleaf/overleaf-config.txt
 headscale/config.yaml
+headscale/*.json
 headplane/config.yaml
