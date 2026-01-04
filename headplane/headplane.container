@@ -15,3 +15,4 @@ Image=ghcr.io/tale/headplane:latest
 Volume=%D/headplane/data:/var/lib/headplane
 Volume=../headscale/config.yaml:/etc/headscale/config.yaml
 Volume=./config.yaml:/etc/headplane/config.yaml
+Network=slirp4netns
