@@ -11,11 +11,11 @@ WantedBy=default.target
 [Container]
 ContainerName=open-webui
 AutoUpdate=registry
-Image=ghcr.io/open-webui/open-webui:main
+Image=docker.io/openwebui/open-webui:slim
 PublishPort=1338:8080
 Volume=open-webui:/app/backend/data
 Environment='ANONYMIZED_TELEMETRY=False'
 Environment='OLLAMA_BASE_URL=http://ollama.local:11434'
 Environment='WEBUI_NAME=ikoGPT'
-AddHost=ollama.local:10.66.66.3
+AddHost=ollama.local:100.67.0.4
 Network=slirp4netns:allow_host_loopback=true
