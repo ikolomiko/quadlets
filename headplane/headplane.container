@@ -8,6 +8,9 @@ Restart=always
 RestartSec=5
 ExecStartPre=/bin/mkdir -p %D/headplane/data
 
+[Install]
+WantedBy=default.target
+
 [Container]
 ContainerName=headplane
 PublishPort=0.0.0.0:6010:6010

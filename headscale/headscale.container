@@ -8,6 +8,9 @@ ExecStartPre=/bin/mkdir -p %D/headscale/data
 ExecStartPre=/bin/mkdir -p %D/headscale/config
 ExecStartPre=/bin/mkdir -p %D/headscale/run
 
+[Install]
+WantedBy=default.target
+
 [Container]
 ContainerName=headscale
 Exec=serve
