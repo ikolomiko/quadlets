@@ -1,0 +1,28 @@
+[Unit]
+Requires=immich-redis.service immich-db.service immich-ml.service
+After=immich-redis.service immich-db.service immich-ml.service
+
+[Container]
+Pod=immich.pod
+ContainerName=immich
+EnvironmentFile=immich.env
+Secret=immich-db-password,type=env,target=DB_PASSWORD
+Image=ghcr.io/immich-app/immich-server:v3.0.3
+Volume=/etc/localtime:/etc/localtime:ro
+Volume=%D/immich/data:/data
+
+HealthCmd=["/bin/bash", "immich-healthcheck"]
+HealthStartPeriod=3m
+HealthInterval=10s
+HealthTimeout=30s
+HealthRetries=10
+Notify=healthy
+
+[Install]
+WantedBy=default.target
+
+
+[Service]
+Restart=on-failure
+RestartSec=5
+ExecStartPre=/bin/mkdir -p %D/immich/data

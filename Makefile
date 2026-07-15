@@ -26,6 +26,7 @@ FOLDERS := \
 	headscale \
 	headplane \
 	ikooskar-cloudauth \
+	immich \
 	nextcloud \
 	open-webui \
 	overleaf \

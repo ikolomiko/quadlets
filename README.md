@@ -108,6 +108,7 @@ I use Podman secrets to manage sensitive information within these Quadlet files.
 echo 'YOUR SUPER SECURE PASSWORD HERE' | podman secret create vaultwarden_password -
 echo 'your.vaultwardendomain.com' | podman secret create vaultwarden_domain -
 echo 'YOUR SUPER SECURE PASSWORD HERE' | podman secret create nc_password -
+openssl rand -base64 20 | podman secret create immich-db-password -
 ```
 
 ## Further Reading

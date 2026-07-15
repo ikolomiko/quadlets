@@ -1,0 +1,16 @@
+[Container]
+Pod=immich.pod
+ContainerName=immich-ml
+Image=ghcr.io/immich-app/immich-machine-learning:v3.0.3
+Volume=immich-ml-cache:/cache
+HealthCmd=["/bin/bash", "-c", "exec 5<>/dev/tcp/127.0.0.1/3003"]
+HealthStartPeriod=30s
+HealthInterval=10s
+HealthTimeout=5s
+HealthRetries=5
+Notify=healthy
+
+[Service]
+Restart=on-failure
+RestartSec=5
+
