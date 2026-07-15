@@ -13,10 +13,10 @@ HealthTimeout=5s
 HealthRetries=5
 Notify=healthy
 Volume=./immich-database-healthcheck:/health.sh:z
-Volume=%D/immich/database:/var/lib/postgresql/data
+Volume=/srv/immich/database:/var/lib/postgresql/data
 
 [Service]
 Restart=on-failure
 RestartSec=5
-ExecStartPre=/bin/mkdir -p %D/immich/database
+ExecStartPre=/bin/mkdir -p /srv/immich/database
 

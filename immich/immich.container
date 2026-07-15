@@ -9,7 +9,7 @@ EnvironmentFile=immich.env
 Secret=immich-db-password,type=env,target=DB_PASSWORD
 Image=ghcr.io/immich-app/immich-server:v3.0.3
 Volume=/etc/localtime:/etc/localtime:ro
-Volume=%D/immich/data:/data
+Volume=/srv/immich/data:/data
 
 HealthCmd=["/bin/bash", "immich-healthcheck"]
 HealthStartPeriod=3m
@@ -25,4 +25,4 @@ WantedBy=default.target
 [Service]
 Restart=on-failure
 RestartSec=5
-ExecStartPre=/bin/mkdir -p %D/immich/data
+ExecStartPre=/bin/mkdir -p /srv/immich/data
