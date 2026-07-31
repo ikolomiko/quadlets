@@ -7,7 +7,7 @@ Pod=immich.pod
 ContainerName=immich
 EnvironmentFile=immich.env
 Secret=immich-db-password,type=env,target=DB_PASSWORD
-Image=ghcr.io/immich-app/immich-server:v3.0.3
+Image=ghcr.io/immich-app/immich-server:v3.1.0
 Volume=/etc/localtime:/etc/localtime:ro
 Volume=/srv/immich/data:/data
 
