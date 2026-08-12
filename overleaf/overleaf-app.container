@@ -16,7 +16,7 @@ Pod=overleaf.pod
 ContainerName=overleaf-app
 AutoUpdate=registry
 EnvironmentFile=overleaf-config.txt
-Image=ghcr.io/ikolomiko/sharelatex
+Image=ghcr.io/ikolomiko/overleaf-pro:6.2.2-arm64
 StopTimeout=60
 Volume=%D/overleaf/sharelatex_data:/var/lib/overleaf
 Environment=SANDBOXED_COMPILES_HOST_DIR=%D/overleaf/sharelatex_data/data/compiles
